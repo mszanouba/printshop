@@ -75,23 +75,6 @@ printshop/
 └── README.md
 ```
 
----
-
-## API Endpoints
-
-| Méthode | Route              | Auth requise | Description                          |
-|---------|--------------------|:------------:|--------------------------------------|
-| POST    | `/api/register`    | ✗            | Créer un compte (nom, email, mdp)    |
-| POST    | `/api/login`       | ✗            | Se connecter → reçoit un token JWT   |
-| POST    | `/api/upload`      | ✓            | Uploader un PDF → retourne nb pages  |
-| POST    | `/api/commander`   | ✓            | Passer une commande → prix calculé   |
-| GET     | `/api/commandes`   | ✓            | Lister l'historique des commandes    |
-| GET     | `/api/prix`        | ✗            | Tester le calcul de prix (utilitaire)|
-
-L'authentification se fait via le header `Authorization: Bearer <token>`.
-Le token JWT est valide **30 jours**.
-
----
 
 ## Lancement en local
 
@@ -109,7 +92,6 @@ uvicorn main:app --reload
 ```
 
 Le serveur API tourne sur **http://localhost:8000**
-La documentation Swagger est accessible sur **http://localhost:8000/docs**
 
 ### 2. Lancer le frontend
 
@@ -121,42 +103,7 @@ npm run dev
 
 L'interface tourne sur **http://localhost:5173**
 
-> En développement, le proxy Vite redirige automatiquement les appels `/api/*` vers le backend sur le port 8000.
-
 ---
-
-## Déploiement gratuit (Render)
-
-L'application peut être hébergée gratuitement sur [Render](https://render.com) avec un seul service (backend + frontend combinés).
-
-### Étapes
-
-1. **Créer un compte** sur [render.com](https://render.com) (pas de carte bancaire nécessaire)
-
-2. **Pousser le projet sur GitHub** :
-   ```bash
-   cd printshop
-   git init
-   git add .
-   git commit -m "PrintShop prototype"
-   ```
-   Créer un repo sur GitHub, puis :
-   ```bash
-   git remote add origin https://github.com/VOTRE_USER/printshop.git
-   git push -u origin main
-   ```
-
-3. **Sur Render** → New → **Web Service** → connecter le repo GitHub
-
-4. **Configurer** :
-   - **Runtime** : Python
-   - **Build Command** : `bash build.sh`
-   - **Start Command** : `cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT`
-   - **Instance Type** : Free
-
-5. **Cliquer sur Deploy** — Render installe tout, build le frontend, et lance le serveur.
-
-6. L'application sera accessible à : `https://printshop-xxxx.onrender.com`
 
 > **Note** : sur le plan gratuit, le serveur se met en veille après 15 min d'inactivité. La première visite après une pause prend ~30 secondes pour redémarrer. C'est normal et suffisant pour une démo.
 
@@ -168,7 +115,6 @@ L'application peut être hébergée gratuitement sur [Render](https://render.com
 - À l'inscription, le mot de passe est hashé avec **bcrypt** avant stockage en base.
 - À la connexion, un **token JWT** est généré (valide 30 jours) et stocké côté navigateur.
 - Chaque requête protégée envoie le token dans le header HTTP.
-- Si le token expire, l'utilisateur est redirigé automatiquement vers la page de connexion.
 
 ### Upload et détection des pages
 - Le fichier PDF est envoyé au serveur via `multipart/form-data`.
@@ -188,18 +134,3 @@ L'application peut être hébergée gratuitement sur [Render](https://render.com
 - Chaque commande peut être dépliée pour voir le détail complet.
 - Le bouton **"Recommander avec ce fichier"** pré-remplit le formulaire de nouvelle commande avec le fichier et les options de l'ancienne commande, tout en permettant de modifier les paramètres avant de valider.
 
----
-
-## Choix techniques
-
-| Choix                      | Justification                                                    |
-|----------------------------|------------------------------------------------------------------|
-| FastAPI                    | Framework Python rapide, typage natif, doc Swagger auto-générée |
-| SQLite                     | Base embarquée, zéro config, suffisante pour un prototype        |
-| JWT (30 jours)             | Authentification stateless, pas de session serveur               |
-| bcrypt                     | Standard de hashing de mots de passe, résistant au brute-force   |
-| pypdf                      | Lecture PDF légère, pas de dépendance système                    |
-| React + Vite               | Build rapide, hot reload, écosystème mature                      |
-| CSS custom (sans framework)| Contrôle total du design, code léger                             |
-| Proxy Vite (dev)           | Évite les problèmes de CORS en développement                    |
-| Fichier statique (prod)    | FastAPI sert le build React → un seul serveur, un seul URL       |
