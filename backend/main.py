@@ -4,6 +4,8 @@ import math
 from fastapi import FastAPI, UploadFile, Depends, HTTPException, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from pypdf import PdfReader
@@ -17,10 +19,10 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="PrintShop API")
 
-# CORS pour le frontend React (Vite tourne sur le port 5173)
+# CORS pour le frontend React (dev : Vite sur 5173, prod : même origine)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["http://localhost:5173", "https://*.onrender.com"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -229,3 +231,30 @@ def mes_commandes(
 def apercu_prix(nb_pages: int, couleur: bool = False, recto_verso: bool = False, nb_copies: int = 1):
     """Endpoint utilitaire pour tester le calcul de prix."""
     return {"prix": calculer_prix(nb_pages, couleur, recto_verso, nb_copies)}
+
+
+# ──────────────────────────────────────────────
+# Servir le frontend React en production
+# (après npm run build → frontend/dist/)
+# ──────────────────────────────────────────────
+
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+print(f"[PrintShop] Recherche du frontend dans : {FRONTEND_DIR}")
+print(f"[PrintShop] Dossier trouvé : {os.path.isdir(FRONTEND_DIR)}")
+
+if os.path.isdir(FRONTEND_DIR):
+    assets_dir = os.path.join(FRONTEND_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="static")
+
+    @app.get("/{path:path}")
+    def serve_frontend(path: str):
+        """Toute route non-API renvoie index.html (SPA routing)."""
+        file_path = os.path.join(FRONTEND_DIR, path)
+        if path and os.path.isfile(file_path):
+            return FileResponse(file_path)
+        return FileResponse(os.path.join(FRONTEND_DIR, "index.html"))
+else:
+    @app.get("/")
+    def no_frontend():
+        return {"message": "API PrintShop OK. Frontend non trouvé.", "path_checked": FRONTEND_DIR}
