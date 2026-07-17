@@ -7,7 +7,7 @@ pip install -r backend/requirements.txt
 echo "=== Build du frontend React ==="
 cd frontend
 npm install
-npm run build
+npx --yes vite build
 cd ..
 
 echo "=== Build terminé ==="
